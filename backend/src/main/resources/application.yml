@@ -1,0 +1,74 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: kathirha-backend
+  datasource:
+    url: jdbc:h2:mem:kathirha;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    username: sa
+    password: ""
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: false
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  mail:
+    host: ${MAIL_HOST:}
+    port: ${MAIL_PORT:2525}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+kathirha:
+  jwt:
+    secret: ${JWT_SECRET:kathirha-dev-secret-please-override-with-32plus-byte-value}
+    expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+  cors:
+    allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:3000}
+  ai:
+    provider: ${AI_PROVIDER:auto}        # auto | openai | deterministic
+    openai:
+      api-key: ${OPENAI_API_KEY:}
+      model: ${OPENAI_MODEL:gpt-4o-mini}
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+      timeout-seconds: 20
+  whatsapp:
+    provider: ${WHATSAPP_PROVIDER:mock}  # mock | twilio
+    twilio:
+      account-sid: ${TWILIO_ACCOUNT_SID:}
+      auth-token: ${TWILIO_AUTH_TOKEN:}
+      from: ${TWILIO_WHATSAPP_FROM:whatsapp:+14155238886}
+  economy:
+    savings-cap-percent: 40
+    default-inflation-percent: 2.3
+    policy-rate-percent: 5.0
+    currency: SAR
+  bank:
+    provider: ${BANK_PROVIDER:mock}          # mock | gocardless
+    gocardless:
+      secret-id: ${GOCARDLESS_SECRET_ID:}
+      secret-key: ${GOCARDLESS_SECRET_KEY:}
+      base-url: ${GOCARDLESS_BASE_URL:https://bankaccountdata.gocardless.com/api/v2}
+      redirect-url: ${GOCARDLESS_REDIRECT_URL:http://localhost:5173/bank/callback}
+      country: ${GOCARDLESS_COUNTRY:GB}
+  email:
+    enabled: ${EMAIL_ENABLED:false}
+    from: ${MAIL_FROM:Kathirha <no-reply@kathirha.app>}
+
+logging:
+  level:
+    org.springframework.security: INFO
+    com.kathirha: INFO

@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/kathirha}
+    username: ${DB_USERNAME:kathirha}
+    password: ${DB_PASSWORD:kathirha}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+  h2:
+    console:
+      enabled: false
+
+logging:
+  level:
+    org.springframework.security: WARN

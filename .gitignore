@@ -1,0 +1,9 @@
+backend/target/
+*.class
+.env
+.DS_Store
+Thumbs.db
+*.log
+.idea/
+*.iml
+.vscode/
