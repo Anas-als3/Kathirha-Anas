@@ -35,6 +35,8 @@ public class TransactionService {
     @Transactional
     public int importTransactions(User user, BigDecimal monthlyIncome, int months,
                                   MockOpenBankingProvider.Preset preset, double savingsRateOverride) {
+        // Re-import replaces the previous window — appending would double income and spending.
+        if (transactions.countByUser(user) > 0) transactions.deleteByUser(user);
         List<Transaction> generated = bank.generate(user, monthlyIncome, months, preset, savingsRateOverride);
         transactions.saveAll(generated);
         return generated.size();

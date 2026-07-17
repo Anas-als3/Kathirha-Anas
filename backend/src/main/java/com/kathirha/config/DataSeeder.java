@@ -6,6 +6,7 @@ import com.kathirha.repository.SeasonRepository;
 import com.kathirha.repository.ShopItemRepository;
 import com.kathirha.repository.UserRepository;
 import com.kathirha.service.IncomeService;
+import com.kathirha.service.PointsService;
 import com.kathirha.service.TransactionService;
 import com.kathirha.service.bank.MockOpenBankingProvider;
 import org.slf4j.Logger;
@@ -30,10 +31,11 @@ public class DataSeeder implements CommandLineRunner {
     private final SeasonRepository seasons;
     private final TransactionService transactionService;
     private final IncomeService incomeService;
+    private final PointsService points;
 
     public DataSeeder(UserRepository users, PasswordEncoder encoder, CashbackCardRepository cards,
                       ShopItemRepository shop, SeasonRepository seasons, TransactionService transactionService,
-                      IncomeService incomeService) {
+                      IncomeService incomeService, PointsService points) {
         this.users = users;
         this.encoder = encoder;
         this.cards = cards;
@@ -41,6 +43,7 @@ public class DataSeeder implements CommandLineRunner {
         this.seasons = seasons;
         this.transactionService = transactionService;
         this.incomeService = incomeService;
+        this.points = points;
     }
 
     @Override
@@ -53,17 +56,19 @@ public class DataSeeder implements CommandLineRunner {
         seedCards();
         Season season = seedSeason();
         seedShop(season);
-        seedUsers();
+        seedUsers(season);
         log.info("Seed complete: {} users.", users.count());
     }
 
     private void seedCards() {
-        card("بطاقة موفّر البقالة", TransactionCategory.GROCERIES, "5.00", "0", "استرداد نقدي 5% على كل مشتريات البقالة", "🛒");
-        card("بطاقة الذوّاقة", TransactionCategory.FOOD_DELIVERY, "8.00", "120", "استرداد نقدي 8% على توصيل الطعام", "🍔");
-        card("بطاقة عشّاق القهوة", TransactionCategory.COFFEE, "10.00", "60", "استرداد نقدي 10% في المقاهي", "☕");
-        card("بطاقة المشاوير", TransactionCategory.TRANSPORT, "4.00", "0", "استرداد نقدي 4% على المواصلات والوقود", "🚗");
-        card("بطاقة المتسوّق", TransactionCategory.SHOPPING, "3.00", "0", "استرداد نقدي 3% على التسوق", "🛍️");
-        card("البطاقة اليومية", TransactionCategory.BILLS, "2.00", "0", "استرداد نقدي 2% على الفواتير", "🧾");
+        // realistic market rates — essentials earn more than indulgences, so cashback never
+        // glorifies discretionary spending (the product rewards saving, not spending)
+        card("بطاقة موفّر البقالة", TransactionCategory.GROCERIES, "4.00", "0", "استرداد نقدي 4% على كل مشتريات البقالة", "🛒");
+        card("بطاقة الذوّاقة", TransactionCategory.FOOD_DELIVERY, "2.50", "120", "استرداد نقدي 2.5% على توصيل الطعام", "🍔");
+        card("بطاقة عشّاق القهوة", TransactionCategory.COFFEE, "3.00", "60", "استرداد نقدي 3% في المقاهي", "☕");
+        card("بطاقة المشاوير", TransactionCategory.TRANSPORT, "3.00", "0", "استرداد نقدي 3% على المواصلات والوقود", "🚗");
+        card("بطاقة المتسوّق", TransactionCategory.SHOPPING, "2.00", "0", "استرداد نقدي 2% على التسوق", "🛍️");
+        card("البطاقة اليومية", TransactionCategory.BILLS, "1.50", "0", "استرداد نقدي 1.5% على الفواتير", "🧾");
     }
 
     private Season seedSeason() {
@@ -84,9 +89,23 @@ public class DataSeeder implements CommandLineRunner {
         item("قسيمة Noon بقيمة 30 ريال", "قسيمة تسوق", "SHOPPING", 200, PointsType.NORMAL, null, "🛒");
         item("بطاقة هدايا Jarir بقيمة 50 ريال", "إلكترونيات وكتب", "SHOPPING", 400, PointsType.NORMAL, null, "🛍️");
         item("صندوق مفاجآت صيف الادّخار", "مفاجأة حصرية للموسم", "SEASONAL", 300, PointsType.SEASONAL, season.getId(), "🏖️");
+
+        // premium tier — partner-funded rewards; riyal value per point drops as the ladder climbs
+        item("قسيمة نون الكبرى بقيمة 75 ريال", "قسيمة شريك تصلك على WhatsApp", "SHOPPING", 1000, PointsType.NORMAL, null, "🛍️");
+        item("بطاقة هدايا جرير بقيمة 100 ريال", "إلكترونيات وكتب — بتمويل الشريك", "SHOPPING", 1400, PointsType.NORMAL, null, "🎁");
+        item("خصم طيران أديل 150 ريال", "خصم شريك على رحلتك القادمة", "TRAVEL", 1500, PointsType.NORMAL, null, "✈️");
+
+        // card skins — cosmetic designs bought with wallet points, applied to the user's hero card
+        // (names must match SHOP_SKINS keys in frontend/src/lib/skins.js; art in /card-art)
+        item("نبض البوليفارد", "سهرة نيون من قلب الرياض — لمن يدّخر بإيقاع المدينة", "SKIN", 600, PointsType.NORMAL, null, "🌃");
+        item("قوس العلا", "صخرُ العلا وقمرُها — تاريخٌ يطلّ من نافذة القوس", "SKIN", 800, PointsType.NORMAL, null, "🏜️");
+        item("لؤلؤ الخليج", "من أعماق الخليج — صبرُ المحّار هو الذي يصنع اللؤلؤ", "SKIN", 800, PointsType.NORMAL, null, "🌊");
+        item("أفق الرياض", "أفق العاصمة عند الغروب — طموحٌ بارتفاع الأبراج", "SKIN", 1000, PointsType.NORMAL, null, "🌆");
+        item("سعفة المجد", "خضرةُ النخل وكرمُه — عطاءٌ يثمر مع كل وديعة", "SKIN", 1200, PointsType.NORMAL, null, "🌴");
+        item("دار الذهب", "زخرفةٌ ونقشٌ وذهبٌ خالص — فخامة الدور العريقة", "SKIN", 1500, PointsType.NORMAL, null, "✨");
     }
 
-    private void seedUsers() {
+    private void seedUsers(Season season) {
         // Admin
         User admin = new User();
         admin.setPhone("admin");
@@ -98,31 +117,57 @@ public class DataSeeder implements CommandLineRunner {
         admin.setCompetitiveOptIn(false);
         users.save(admin);
 
-        // Primary demo user (SILVER league, coffee-leaker, ~22% savings) -> ranks mid-table
-        saver("+966500000001", "سارة العتيبي", "sara@kathirha.app", 9000,
-                MockOpenBankingProvider.Preset.COFFEE_HEAVY, 0.22);
+        Long sid = season.getId();
+        // League score = saving points (rate/40% × 1000, capped) + earned WALLET activity points.
+        // Seasonal points power the battle pass only. Leagues: برونزي < 750 ≤ فضي < 1750 ≤ ذهبي < 3250 ≤ ماسي
 
-        // SILVER league competitors
-        saver("+966500000003", "لينا القحطاني", "lina@kathirha.app", 11000,
-                MockOpenBankingProvider.Preset.BALANCED, 0.45); // hits the 40% cap
-        saver("+966500000004", "نورة الدوسري", "noura@kathirha.app", 9500,
-                MockOpenBankingProvider.Preset.BALANCED, 0.30);
-        saver("+966500000005", "فيصل الغامدي", "faisal@kathirha.app", 13000,
-                MockOpenBankingProvider.Preset.FOOD_HEAVY, 0.18);
-        saver("+966500000006", "منصور الشهري", "mansour@kathirha.app", 8500,
-                MockOpenBankingProvider.Preset.FOOD_HEAVY, 0.13);
+        // ---- Primary demo user — SILVER, mid-table (coffee-leaker, ~22% ≈ 550 save pts) ----
+        // 370 activity so أنس is Silver even at plain login; the demo-seed welcome bonus then skips (balance ≥ 200).
+        boost(saver("+966500000001", "أنس السبيعي", "anas@kathirha.app", 9000,
+                MockOpenBankingProvider.Preset.COFFEE_HEAVY, 0.22), 370, 820, sid);   // ≈ 918
 
-        // Second demo user (GOLD league)
-        saver("+966500000002", "خالد الحربي", "khalid@kathirha.app", 16000,
-                MockOpenBankingProvider.Preset.BALANCED, 0.27);
-        // GOLD competitors
-        saver("+966500000007", "عمر الزهراني", "omar@kathirha.app", 18000,
-                MockOpenBankingProvider.Preset.BALANCED, 0.33);
-        saver("+966500000008", "سلطان المطيري", "sultan@kathirha.app", 22000,
-                MockOpenBankingProvider.Preset.FOOD_HEAVY, 0.20);
+        // ---- SILVER league (750–1749) ----
+        boost(saver("+966500000004", "نورة الدوسري", "noura@kathirha.app", 9500,
+                MockOpenBankingProvider.Preset.BALANCED, 0.30), 490, 610, sid);       // ≈ 1240
+        boost(saver("+966500000009", "عبدالله السالم", "abdullah@kathirha.app", 6000,
+                MockOpenBankingProvider.Preset.BALANCED, 0.25), 350, 300, sid);       // ≈ 975
+        boost(saver("+966500000010", "جود الحمد", "joud@kathirha.app", 10000,
+                MockOpenBankingProvider.Preset.COFFEE_HEAVY, 0.28), 410, 380, sid);   // ≈ 1110
+        boost(saver("+966500000011", "أمل الصاعدي", "amal@kathirha.app", 8000,
+                MockOpenBankingProvider.Preset.BALANCED, 0.44), 470, 260, sid);       // capped 1000 → ≈ 1470
+        boost(saver("+966500000005", "فيصل الغامدي", "faisal@kathirha.app", 13000,
+                MockOpenBankingProvider.Preset.FOOD_HEAVY, 0.18), 330, 270, sid);     // ≈ 780
+
+        // ---- GOLD league (1750–3249) ----
+        boost(saver("+966500000003", "لينا القحطاني", "lina@kathirha.app", 11000,
+                MockOpenBankingProvider.Preset.BALANCED, 0.45), 1250, 1420, sid);     // capped 1000 → ≈ 2250
+        boost(saver("+966500000002", "خالد الحربي", "khalid@kathirha.app", 16000,
+                MockOpenBankingProvider.Preset.BALANCED, 0.27), 1150, 900, sid);      // ≈ 1825
+        boost(saver("+966500000007", "عمر الزهراني", "omar@kathirha.app", 18000,
+                MockOpenBankingProvider.Preset.BALANCED, 0.33), 1050, 700, sid);      // ≈ 1875
+        boost(saver("+966500000008", "سلطان المطيري", "sultan@kathirha.app", 22000,
+                MockOpenBankingProvider.Preset.FOOD_HEAVY, 0.20), 1450, 950, sid);    // ≈ 1950
+        boost(saver("+966500000012", "طلال النعيمي", "talal@kathirha.app", 20000,
+                MockOpenBankingProvider.Preset.BALANCED, 0.24), 1700, 1200, sid);     // ≈ 2300
+
+        // ---- BRONZE league (< 750) ----
+        boost(saver("+966500000013", "هند المالكي", "hind@kathirha.app", 12000,
+                MockOpenBankingProvider.Preset.FOOD_HEAVY, 0.08), 80, 120, sid);      // ≈ 280
+        boost(saver("+966500000014", "مشعل العوفي", "meshal@kathirha.app", 5000,
+                MockOpenBankingProvider.Preset.COFFEE_HEAVY, 0.15), 40, 60, sid);     // ≈ 415
+        boost(saver("+966500000006", "منصور الشهري", "mansour@kathirha.app", 8500,
+                MockOpenBankingProvider.Preset.FOOD_HEAVY, 0.13), 30, 80, sid);       // ≈ 355
+        boost(saver("+966500000015", "يزيد الراشد", "yazeed@kathirha.app", 9000,
+                MockOpenBankingProvider.Preset.FOOD_HEAVY, 0.10), 60, 90, sid);       // ≈ 310
+
+        // ---- DIAMOND league (≥ 3250) ----
+        boost(saver("+966500000016", "ريم العنزي", "reem@kathirha.app", 7000,
+                MockOpenBankingProvider.Preset.BALANCED, 0.36), 2600, 1600, sid);     // ≈ 3500
+        boost(saver("+966500000017", "فاطمة البقمي", "fatimah@kathirha.app", 15000,
+                MockOpenBankingProvider.Preset.BALANCED, 0.38), 2500, 1500, sid);     // ≈ 3450
     }
 
-    private void saver(String phone, String name, String email, int income,
+    private User saver(String phone, String name, String email, int income,
                        MockOpenBankingProvider.Preset preset, double rate) {
         User u = new User();
         u.setPhone(phone);
@@ -134,6 +179,17 @@ public class DataSeeder implements CommandLineRunner {
         users.save(u);
         transactionService.importTransactions(u, BigDecimal.valueOf(income), 3, preset, rate);
         incomeService.detectAndVerify(u);
+        return u;
+    }
+
+    /** Earned activity points (missions/quiz/streaks) + seasonal points — makes leaderboards and the battle pass feel alive. */
+    private void boost(User u, int activity, int seasonal, Long seasonId) {
+        if (activity > 0) {
+            points.award(u, activity, PointsType.NORMAL, PointsReason.CHALLENGE, "مهام وتحدّيات مكتملة", null);
+        }
+        if (seasonal > 0) {
+            points.award(u, seasonal, PointsType.SEASONAL, PointsReason.CHALLENGE, "تحدّيات الموسم", seasonId);
+        }
     }
 
     private void card(String name, TransactionCategory cat, String pct, String fee, String desc, String emoji) {

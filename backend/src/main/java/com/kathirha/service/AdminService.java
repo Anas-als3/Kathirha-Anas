@@ -88,8 +88,8 @@ public class AdminService {
         items.add(new AiModels.AdminInsightItem(
                 "نوع المهام الأكثر إنجازًا",
                 topMission == null ? "لا توجد مهام مكتملة بعد."
-                        : "مهام " + topMission.name() + " هي الأكثر إنجازًا — ركّز عليها لتعزيز الاستمرارية.",
-                topMission == null ? "—" : topMission.name()));
+                        : "المهام " + missionTypeLabel(topMission) + " هي الأكثر إنجازًا — ركّز عليها لتعزيز الاستمرارية.",
+                topMission == null ? "—" : missionTypeLabel(topMission)));
         items.add(new AiModels.AdminInsightItem(
                 "أقوى محفّز للتفاعل",
                 "\"" + topReward + "\" هي المكافأة الأكثر استبدالًا — تعيد المستخدمين للادّخار من جديد.",
@@ -100,6 +100,19 @@ public class AdminService {
                 "متوسط نسبة الادّخار " + round1(avgRate) + "% لدى " + verified + " مستخدم موثّق.", result,
                 AiSource.DETERMINISTIC);
         return result;
+    }
+
+    private String missionTypeLabel(MissionType t) {
+        return switch (t) {
+            case DAILY -> "اليومية";
+            case WEEKLY -> "الأسبوعية";
+            case MONTHLY -> "الشهرية";
+            case PAYDAY -> "يوم الراتب";
+            case EMERGENCY -> "الطارئة";
+            case SURVEY -> "الاستبيانات";
+            case LEARN -> "التعليمية";
+            case SOCIAL -> "الاجتماعية";
+        };
     }
 
     private static double round1(double v) {

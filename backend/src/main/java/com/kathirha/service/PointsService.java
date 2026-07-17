@@ -40,14 +40,20 @@ public class PointsService {
     public int spend(User user, int amount, PointsType type, PointsReason reason, String description, Long seasonId) {
         int current = ledger.balance(user, type);
         if (current < amount) {
+            String wallet = type == PointsType.SEASONAL ? "الموسمية" : "";
             throw new ApiExceptions.BadRequestException(
-                    "Not enough " + type.name().toLowerCase() + " points (have " + current + ", need " + amount + ")");
+                    "نقاطك " + wallet + " لا تكفي — رصيدك " + current + " وتحتاج " + amount + " نقطة");
         }
         return award(user, -amount, type, reason, description, seasonId);
     }
 
     public int balance(User user, PointsType type) {
         return ledger.balance(user, type);
+    }
+
+    /** Battle-pass XP: earned seasonal points only — shop spending never lowers pass progress. */
+    public int seasonalEarned(User user) {
+        return ledger.seasonalEarnedTotal(user);
     }
 
     public List<PointsLedgerEntry> recent(User user) {

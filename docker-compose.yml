@@ -1,0 +1,60 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${DB_NAME:-kathirha}
+      POSTGRES_USER: ${DB_USERNAME:-kathirha}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-kathirha}
+    volumes:
+      - kathirha_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-kathirha}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DATABASE_URL: jdbc:postgresql://db:5432/${DB_NAME:-kathirha}
+      DB_USERNAME: ${DB_USERNAME:-kathirha}
+      DB_PASSWORD: ${DB_PASSWORD:-kathirha}
+      JWT_SECRET: ${JWT_SECRET:-change-me-to-a-long-random-32plus-byte-secret-value}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8088}
+      AI_PROVIDER: ${AI_PROVIDER:-auto}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      # Open banking
+      BANK_PROVIDER: ${BANK_PROVIDER:-mock}
+      GOCARDLESS_SECRET_ID: ${GOCARDLESS_SECRET_ID:-}
+      GOCARDLESS_SECRET_KEY: ${GOCARDLESS_SECRET_KEY:-}
+      GOCARDLESS_COUNTRY: ${GOCARDLESS_COUNTRY:-GB}
+      GOCARDLESS_REDIRECT_URL: ${GOCARDLESS_REDIRECT_URL:-http://localhost:8088/bank/callback}
+      # WhatsApp (Twilio)
+      WHATSAPP_PROVIDER: ${WHATSAPP_PROVIDER:-mock}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_WHATSAPP_FROM: ${TWILIO_WHATSAPP_FROM:-whatsapp:+14155238886}
+      # Email (Mailtrap)
+      EMAIL_ENABLED: ${EMAIL_ENABLED:-false}
+      MAIL_HOST: ${MAIL_HOST:-}
+      MAIL_PORT: ${MAIL_PORT:-2525}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-Kathirha <no-reply@kathirha.app>}
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_PORT:-8088}:80"
+
+volumes:
+  kathirha_db:

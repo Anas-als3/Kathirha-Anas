@@ -136,6 +136,30 @@ public class DeterministicAiCoach implements AiCoach {
                 "EMERGENCY", "MEDIUM", reward(MissionDifficulty.MEDIUM),
                 TransactionCategory.SAVINGS_TRANSFER.name(), emergencyTarget));
 
+        // SURVEY — the feedback loop: users share opinions, we learn and reward
+        out.add(new AiModels.MissionSpec(
+                "شارك رأيك في استبيان كثّرها",
+                "استبيان 60 ثانية عن تجربتك هذا الأسبوع — نتعلّم منك ونكافئك بالنقاط.",
+                "SURVEY", "EASY", reward(MissionDifficulty.EASY), null, BigDecimal.ZERO));
+
+        // LEARN — financial literacy beyond saving
+        out.add(new AiModels.MissionSpec(
+                "أجب على سؤال اليوم 3 أيام متتالية",
+                "دقيقة واحدة يوميًا ترفع وعيك المالي وتحافظ على سلسلتك.",
+                "LEARN", "MEDIUM", reward(MissionDifficulty.MEDIUM), null, BigDecimal.ZERO));
+
+        // LEARN easy — know where your money goes
+        out.add(new AiModels.MissionSpec(
+                "راجع خريطة مصروفاتك",
+                "افتح «أين تذهب أموالك؟» وحدّد أكبر ثلاث فئات إنفاق لديك هذا الشهر.",
+                "LEARN", "EASY", reward(MissionDifficulty.EASY), null, BigDecimal.ZERO));
+
+        // SOCIAL — bring a friend into the savings challenge
+        out.add(new AiModels.MissionSpec(
+                "ادعُ صديقًا لتحدّي الادّخار",
+                "الادّخار أمتع بالمنافسة — شارك دعوتك وانضمّا لنفس الدوري.",
+                "SOCIAL", "MEDIUM", reward(MissionDifficulty.MEDIUM), null, BigDecimal.ZERO));
+
         return out;
     }
 
@@ -157,9 +181,9 @@ public class DeterministicAiCoach implements AiCoach {
         else risk = "منخفضة";
 
         String strategy = String.format(
-                "خطتك: %s شهريًا (%s أسبوعيًا) لمدة %d شهرًا حتى تبلغ هدفك %s. "
+                "خطتك: %s شهريًا (%s أسبوعيًا) لمدة %s حتى تبلغ هدفك %s. "
                         + "المتاح لديك بعد مصروفاتك نحو %s شهريًا. فعّل التحويل التلقائي يوم الراتب حتى لا يُصرف قبل أن يُدَّخر.",
-                money(monthly), money(weekly), months, money(adjusted), money(disposable));
+                money(monthly), money(weekly), monthsLabel(months), money(adjusted), money(disposable));
 
         List<AiModels.MissionSpec> suggested = generateMissions(p, IncomeLeague.fromIncome(p.baselineIncome))
                 .stream().limit(2).toList();
@@ -220,7 +244,7 @@ public class DeterministicAiCoach implements AiCoach {
                     "لا تتوفر بيانات إنفاق كافية بعد لنرشّح لك بطاقة.");
         }
         BigDecimal spend = p.categoryMonthly(best.getRewardCategory());
-        String reason = String.format("تنفق %s شهريًا على %s — بطاقة %s تمنحك استردادًا نقديًا بنسبة %.1f%%، أي توفير يقارب %s شهريًا.",
+        String reason = String.format("تنفق %s شهريًا على %s — %s تعيد لك %.1f%%، أي نحو %s شهريًا على إنفاقك الحالي. والأذكى دائمًا: خفض الفئة نفسها — فنقاطك تُكسب من الادّخار لا من الإنفاق.",
                 money(spend), best.getRewardCategory().label, best.getName(), best.getCashbackPercent().doubleValue(), money(bestSaving.max(BigDecimal.ZERO)));
         return new AiModels.CashbackRecommendation(best.getName(), best.getEmoji(), best.getRewardCategory().label,
                 bestSaving.max(BigDecimal.ZERO), reason);
@@ -342,7 +366,7 @@ public class DeterministicAiCoach implements AiCoach {
         String msg = currentStreak >= 30
                 ? "🔥 سلسلة " + currentStreak + " يومًا! أنت ضمن نخبة المدّخرين. استمرارية كهذه يتضاعف أثرها."
                 : currentStreak >= 7
-                ? "🔥 " + currentStreak + " أيام متواصلة! أسبوع كامل من الادّخار — واصل لتحصد نقاطًا إضافية."
+                ? "🔥 سلسلة " + daysLabel(currentStreak) + " من الادّخار المتواصل — واصل لتحصد نقاطًا إضافية."
                 : "أحسنت — اليوم " + currentStreak + ". مدخرات صغيرة يوميًا أفضل من دفعة كبيرة شهريًا. نراك غدًا!";
         return new AiModels.StreakCoachMessage(msg, true);
     }
@@ -389,5 +413,21 @@ public class DeterministicAiCoach implements AiCoach {
     static String money(BigDecimal v) {
         if (v == null) v = BigDecimal.ZERO;
         return v.setScale(0, RoundingMode.HALF_UP).toPlainString() + " ريال";
+    }
+
+    /** Arabic number agreement for months: شهر واحد / شهران / 3-10 أشهر / 11+ شهرًا. */
+    static String monthsLabel(long n) {
+        if (n == 1) return "شهر واحد";
+        if (n == 2) return "شهرين";
+        if (n <= 10) return n + " أشهر";
+        return n + " شهرًا";
+    }
+
+    /** Arabic number agreement for days: يوم واحد / يومان / 3-10 أيام / 11+ يومًا. */
+    static String daysLabel(long n) {
+        if (n == 1) return "يوم واحد";
+        if (n == 2) return "يومين";
+        if (n <= 10) return n + " أيام";
+        return n + " يومًا";
     }
 }

@@ -79,7 +79,8 @@ public class MissionService {
                 .filter(x -> x.getUser().getId().equals(user.getId()))
                 .orElseThrow(() -> new ApiExceptions.NotFoundException("المهمة غير موجودة"));
         if (m.getStatus() != MissionStatus.ACTIVE) {
-            throw new ApiExceptions.BadRequestException("المهمة لم تعد نشطة — حالتها الحالية: " + m.getStatus().name().toLowerCase());
+            String state = m.getStatus() == MissionStatus.COMPLETED ? "أكملتها سابقًا" : "انتهت مدّتها";
+            throw new ApiExceptions.BadRequestException("المهمة لم تعد نشطة — " + state + ".");
         }
         m.setStatus(MissionStatus.COMPLETED);
         m.setCompletedAt(Instant.now());
@@ -99,8 +100,8 @@ public class MissionService {
     private static LocalDate dueDateFor(MissionType type) {
         return switch (type) {
             case DAILY -> LocalDate.now().plusDays(1);
-            case WEEKLY -> LocalDate.now().plusDays(7);
-            case PAYDAY -> LocalDate.now().plusDays(3);
+            case WEEKLY, SOCIAL -> LocalDate.now().plusDays(7);
+            case PAYDAY, SURVEY, LEARN -> LocalDate.now().plusDays(3);
             case MONTHLY, EMERGENCY -> LocalDate.now().plusDays(30);
         };
     }

@@ -69,7 +69,7 @@ public class WhatsAppController {
         } else {
             whatsapp.recordInbound(user, MessageCategory.GENERAL, body, null);
             whatsapp.send(user, MessageCategory.GENERAL,
-                    "Thanks! Open the Kathirha app to keep growing your savings 🌱", null);
+                    "شكرًا لرسالتك! افتح تطبيق كثّرها لتواصل تنمية مدّخراتك 🌱", null);
             action = "auto_reply";
         }
 

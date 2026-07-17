@@ -128,7 +128,7 @@ public class LeaderboardService {
         Scored me = idx >= 0 ? scored.get(idx) : scoreOf(viewer);
         boolean capped = me.ratePercent() > cap;
         String capExplanation = "نقاطك = نقاط الادّخار (نسبة ادّخارك حتى " + cap + "٪ من دخلك) + نقاط نشاطك "
-                + "(المهام وسؤال اليوم والاستبيانات والسلاسل). الادّخار فوق " + cap + "٪ لا يمنح نقاطًا إضافية — "
+                + "(المهام وسؤال اليوم والاستبيانات). الادّخار فوق " + cap + "٪ لا يمنح نقاطًا إضافية — "
                 + "فالصدارة تكافئ الانضباط لا الثروة. ونقاطك تُكتسب ولا تُنقَص عند الصرف.";
 
         String rankReason;
@@ -153,7 +153,7 @@ public class LeaderboardService {
                 BigDecimal sarPerPoint = income.multiply(BigDecimal.valueOf(cap))
                         .divide(BigDecimal.valueOf(100L * SAVING_POINTS_AT_CAP), 4, RoundingMode.HALF_UP);
                 extra = sarPerPoint.multiply(BigDecimal.valueOf(deltaPoints)).setScale(0, RoundingMode.CEILING);
-                nextStep = String.format("تحتاج %d نقطة لتجاوزه — ادّخر نحو %s ريال إضافية هذا الشهر، أو اكسبها من المهام وسؤال اليوم.",
+                nextStep = String.format("تحتاج %d نقطة لتجاوزه — ادّخر نحو %s ريال إضافيًا هذا الشهر، أو اكسب النقاط من المهام وسؤال اليوم.",
                         deltaPoints, extra.toPlainString());
             }
         }

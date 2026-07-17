@@ -17,17 +17,22 @@ import java.util.ArrayList;
 @Service
 public class DailyQuestionService {
 
+    /** Seasonal bonus per correct answer — feeds the battle pass, never the leaderboard score. */
+    private static final int SEASONAL_BONUS = 5;
+
     private final DailyQuestionRepository questions;
     private final TransactionService transactionService;
     private final AiCoach coach;
     private final PointsService points;
+    private final SeasonService seasons;
 
     public DailyQuestionService(DailyQuestionRepository questions, TransactionService transactionService,
-                                AiCoach coach, PointsService points) {
+                                AiCoach coach, PointsService points, SeasonService seasons) {
         this.questions = questions;
         this.transactionService = transactionService;
         this.coach = coach;
         this.points = points;
+        this.seasons = seasons;
     }
 
     @Transactional
@@ -67,6 +72,11 @@ public class DailyQuestionService {
             awarded = q.getRewardPoints();
             balance = points.award(user, awarded, PointsType.NORMAL, PointsReason.QUIZ,
                     "إجابة صحيحة على سؤال اليوم", null);
+            Long seasonId = seasons.currentSeasonId();
+            if (seasonId != null) {
+                points.award(user, SEASONAL_BONUS, PointsType.SEASONAL, PointsReason.QUIZ,
+                        "سؤال اليوم — نقاط الموسم", seasonId);
+            }
         }
         return new AnswerResult(correct, q.getCorrectIndex(), q.getExplanation(), awarded, balance);
     }

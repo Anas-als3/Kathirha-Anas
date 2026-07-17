@@ -42,7 +42,7 @@ public class AuthService {
     @Transactional
     public RegisterResult register(String phone, String displayName, String email, String password) {
         if (users.existsByPhone(phone)) {
-            throw new ApiExceptions.BadRequestException("That phone number is already registered");
+            throw new ApiExceptions.BadRequestException("رقم الجوال مسجّل لدينا — سجّل الدخول مباشرة");
         }
         User u = new User();
         u.setPhone(phone);
@@ -55,10 +55,10 @@ public class AuthService {
         u.setOtpCode(otp);
         users.save(u);
 
-        whatsapp.send(u, MessageCategory.OTP, "Your Kathirha verification code is " + otp + " 🔐", null);
+        whatsapp.send(u, MessageCategory.OTP, "رمز التحقق في كثّرها: " + otp + " 🔐", null);
         whatsapp.send(u, MessageCategory.WELCOME,
-                "Ahlan " + (displayName == null ? "" : displayName) + "! Welcome to Kathirha 🌱 "
-                        + "Link your bank to get your AI savings coach and join the fairness leaderboard.", null);
+                "أهلًا " + (displayName == null ? "" : displayName) + "! مرحبًا بك في كثّرها 🌱 "
+                        + "اربط حسابك البنكي ليبدأ مدرّبك الذكي وتنضم إلى لوحة الصدارة العادلة.", null);
         emailService.sendWelcome(u);
 
         // NOTE: the OTP is delivered via the (mock) WhatsApp channel only — never returned in the
@@ -69,9 +69,9 @@ public class AuthService {
 
     public Views.AuthResponse login(String phone, String password) {
         User u = users.findByPhone(phone)
-                .orElseThrow(() -> new ApiExceptions.UnauthorizedException("Invalid phone or password"));
+                .orElseThrow(() -> new ApiExceptions.UnauthorizedException("رقم الجوال أو كلمة المرور غير صحيحة"));
         if (!encoder.matches(password, u.getPasswordHash())) {
-            throw new ApiExceptions.UnauthorizedException("Invalid phone or password");
+            throw new ApiExceptions.UnauthorizedException("رقم الجوال أو كلمة المرور غير صحيحة");
         }
         String token = jwt.generateToken(u);
         return new Views.AuthResponse(token, accounts.meView(u));
@@ -81,10 +81,10 @@ public class AuthService {
     @Transactional
     public Views.AuthResponse updatePhone(User user, String phone) {
         String p = phone == null ? "" : phone.trim();
-        if (p.isBlank()) throw new ApiExceptions.BadRequestException("Phone number is required");
+        if (p.isBlank()) throw new ApiExceptions.BadRequestException("أدخل رقم الجوال للمتابعة");
         users.findByPhone(p).ifPresent(other -> {
             if (!other.getId().equals(user.getId())) {
-                throw new ApiExceptions.BadRequestException("That number is already in use");
+                throw new ApiExceptions.BadRequestException("هذا الرقم مستخدم في حساب آخر");
             }
         });
         user.setPhone(p);
@@ -95,9 +95,9 @@ public class AuthService {
     @Transactional
     public Views.AuthResponse verifyOtp(String phone, String code) {
         User u = users.findByPhone(phone)
-                .orElseThrow(() -> new ApiExceptions.NotFoundException("Account not found"));
+                .orElseThrow(() -> new ApiExceptions.NotFoundException("لا يوجد حساب بهذا الرقم"));
         if (u.getOtpCode() == null || !u.getOtpCode().equals(code)) {
-            throw new ApiExceptions.BadRequestException("Incorrect verification code");
+            throw new ApiExceptions.BadRequestException("رمز التحقق غير صحيح — تأكد منه وأعد المحاولة");
         }
         u.setPhoneVerified(true);
         u.setOtpCode(null);

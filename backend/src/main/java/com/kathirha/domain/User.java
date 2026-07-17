@@ -35,6 +35,9 @@ public class User {
     private boolean bankVerified = false;
     private boolean competitiveOptIn = true;
 
+    /** كثّرها+ premium rewards track — unlocked via salary transfer, savings balance, or subscription. */
+    private boolean plusActive = false;
+
     /** Verified monthly income detected from salary credits. */
     private BigDecimal baselineIncome;
 

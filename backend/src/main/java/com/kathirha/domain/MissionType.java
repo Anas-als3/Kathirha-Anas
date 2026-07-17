@@ -1,3 +1,3 @@
 package com.kathirha.domain;
 
-public enum MissionType { DAILY, WEEKLY, MONTHLY, PAYDAY, EMERGENCY }
+public enum MissionType { DAILY, WEEKLY, MONTHLY, PAYDAY, EMERGENCY, SURVEY, LEARN, SOCIAL }

@@ -51,6 +51,7 @@ public class DemoService {
     private final PointsLedgerRepository pointsRepo;
     private final AiInsightRepository insightRepo;
     private final DailyQuestionRepository questionRepo;
+    private final SeasonTierClaimRepository tierClaimRepo;
 
     public DemoService(UserRepository users, TransactionService transactionService, IncomeService incomeService,
                        MissionService missionService, GoalService goalService, DailyQuestionService dailyQuestionService,
@@ -59,7 +60,8 @@ public class DemoService {
                        JwtService jwt, AccountService accounts, MissionRepository missionRepo,
                        SavingsGoalRepository goalRepo, RedemptionRepository redemptionRepo,
                        WhatsAppMessageRepository whatsappRepo, PointsLedgerRepository pointsRepo,
-                       AiInsightRepository insightRepo, DailyQuestionRepository questionRepo) {
+                       AiInsightRepository insightRepo, DailyQuestionRepository questionRepo,
+                       SeasonTierClaimRepository tierClaimRepo) {
         this.users = users;
         this.transactionService = transactionService;
         this.incomeService = incomeService;
@@ -79,6 +81,7 @@ public class DemoService {
         this.pointsRepo = pointsRepo;
         this.insightRepo = insightRepo;
         this.questionRepo = questionRepo;
+        this.tierClaimRepo = tierClaimRepo;
     }
 
     @Transactional
@@ -137,9 +140,11 @@ public class DemoService {
         pointsRepo.deleteByUser(user);
         insightRepo.deleteByUser(user);
         questionRepo.deleteByUser(user);
+        tierClaimRepo.deleteByUser(user);
         user.setCurrentStreak(0);
         user.setLongestStreak(0);
         user.setStreakFreezes(2);
+        user.setPlusActive(false);
         user.setSpendingPersonality(null);
         user.setSavingsHealthScore(null);
         users.save(user);

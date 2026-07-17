@@ -12,8 +12,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 public class GoalService {
@@ -128,9 +131,14 @@ public class GoalService {
         whatsapp.recordInbound(user, MessageCategory.GOAL_RESCUE, opt.startsWith("1") || opt.equals("EXTEND") ? "1" : "2", "goal:" + g.getId());
         whatsapp.send(user, MessageCategory.GOAL_RESCUE,
                 "✅ تم! عاد هدف \"" + g.getName() + "\" إلى مساره الصحيح. الخطة الجديدة: "
-                        + g.getMonthlySaving() + " ريال شهريًا، والموعد المستهدف " + g.getTargetDate() + ".",
+                        + g.getMonthlySaving().setScale(0, RoundingMode.HALF_UP) + " ريال شهريًا، والموعد المستهدف "
+                        + arabicDate(g.getTargetDate()) + ".",
                 "goal:" + g.getId());
         return g;
+    }
+
+    private static String arabicDate(LocalDate d) {
+        return d == null ? "" : d.format(DateTimeFormatter.ofPattern("d MMMM yyyy", new Locale("ar")));
     }
 
     /** Force a goal into BEHIND for the demo (deterministic). */

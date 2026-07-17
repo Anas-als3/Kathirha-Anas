@@ -42,13 +42,13 @@ public class ShopService {
     @Transactional
     public Redemption redeem(User user, Long itemId) {
         ShopItem item = items.findById(itemId)
-                .orElseThrow(() -> new ApiExceptions.NotFoundException("Reward not found"));
+                .orElseThrow(() -> new ApiExceptions.NotFoundException("هذه المكافأة لم تعد متاحة"));
         if (!item.isActive() || item.getStock() <= 0) {
-            throw new ApiExceptions.BadRequestException("This reward is out of stock");
+            throw new ApiExceptions.BadRequestException("نفدت هذه المكافأة — اختر مكافأة أخرى");
         }
         Long seasonId = item.getPointsType() == PointsType.SEASONAL ? seasons.currentSeasonId() : null;
         points.spend(user, item.getCostPoints(), item.getPointsType(),
-                PointsReason.REDEMPTION, "Redeemed " + item.getName(), seasonId);
+                PointsReason.REDEMPTION, "استبدال: " + item.getName(), seasonId);
 
         item.setStock(item.getStock() - 1);
         items.save(item);
@@ -65,8 +65,8 @@ public class ShopService {
         redemptions.save(r);
 
         whatsapp.send(user, MessageCategory.COUPON,
-                "🎉 Reward unlocked: " + item.getEmoji() + " " + item.getName()
-                        + "\nYour coupon code: *" + code + "*\nShow it at checkout to redeem. Enjoy!",
+                "🎉 فتحت مكافأة: " + item.getEmoji() + " " + item.getName()
+                        + "\nرمز القسيمة: *" + code + "*\nأبرِزه عند الدفع. بالهناء!",
                 "redemption:" + r.getId());
         return r;
     }
@@ -81,16 +81,21 @@ public class ShopService {
             ShopItem cheapest = list().stream()
                     .min(Comparator.comparingInt(ShopItem::getCostPoints)).orElse(null);
             int need = cheapest == null ? 0 : cheapest.getCostPoints() - normalBalance;
+            int missionsNeeded = Math.max(1, need / 15);
+            String missionsLabel = missionsNeeded == 1 ? "مهمة واحدة"
+                    : missionsNeeded == 2 ? "مهمتين"
+                    : missionsNeeded <= 10 ? missionsNeeded + " مهام"
+                    : missionsNeeded + " مهمة";
             return new AiModels.RewardRecommendation(
                     cheapest == null ? null : cheapest.getId(),
                     cheapest == null ? "—" : cheapest.getName(),
                     cheapest == null ? "🎁" : cheapest.getEmoji(),
-                    "Complete " + Math.max(1, need / 15) + " more missions (~" + Math.max(0, need)
-                            + " pts) to unlock your first reward.");
+                    "أكمل نحو " + missionsLabel + " — تحتاج " + Math.max(0, need)
+                            + " نقطة تقريبًا لتفتح أول مكافأة لك.");
         }
         ShopItem best = affordable.get(0);
         return new AiModels.RewardRecommendation(best.getId(), best.getName(), best.getEmoji(),
-                "You have " + normalBalance + " points — enough for " + best.getName()
-                        + ". A popular pick among savers like you.");
+                "لديك " + normalBalance + " نقطة — تكفي لاستبدال " + best.getName()
+                        + "، وهو خيار رائج بين المدّخرين أمثالك.");
     }
 }
